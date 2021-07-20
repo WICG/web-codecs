@@ -460,8 +460,10 @@ Algorithms {#audiodecoder-algorithms}
             5. Let |timestamp| be the {{EncodedAudioChunk/[[timestamp]]}} of the
                 {{EncodedAudioChunk}} associated with |output|.
             6. Assign |timestamp| to {{AudioData/[[timestamp]]}}.
-            7. Assign values to {{AudioData/[[format]]}},
-                {{AudioData/[[sample rate]]}},
+            7. If |output| uses a recognized {{AudioSampleFormat}}, assign that
+                format to {{AudioData/[[format]]}}. Otherwise, assign `null` to
+                {{AudioData/[[format]]}}.
+            8. Assign values to {{AudioData/[[sample rate]]}},
                 {{AudioData/[[number of frames]]}}, and
                 {{AudioData/[[number of channels]]}} as determined by |output|.
         3. Invoke {{AudioDecoder/[[output callback]]}} with |data|.
@@ -2225,7 +2227,7 @@ AudioData Interface {#audiodata-interface}
 interface AudioData {
   constructor(AudioDataInit init);
 
-  readonly attribute AudioSampleFormat format;
+  readonly attribute AudioSampleFormat? format;
   readonly attribute float sampleRate;
   readonly attribute unsigned long numberOfFrames;
   readonly attribute unsigned long numberOfChannels;
@@ -2255,7 +2257,9 @@ dictionary AudioDataInit {
     this {{AudioData}}.
 
 : <dfn attribute for=AudioData>\[[format]]</dfn>
-:: The {{AudioSampleFormat}} used by this {{AudioData}}.
+:: The {{AudioSampleFormat}} used by this {{AudioData}}. Will be `null` whenever
+    the underlying format does not map to an {{AudioSampleFormat}} or when
+    {{platform object/[[Detached]]}} is `true`.
 
 : <dfn attribute for=AudioData>[[sample rate]]</dfn>
 :: The sample-rate, in Hz, for this {{AudioData}}.
@@ -2295,7 +2299,9 @@ dictionary AudioDataInit {
 ### Attributes ###{#audiodata-attributes}
 
 : <dfn attribute for=AudioData>format</dfn>
-:: The {{AudioSampleFormat}} used by this {{AudioData}}.
+:: The {{AudioSampleFormat}} used by this {{AudioData}}. Will be `null` whenever
+    the underlying format does not map to a {{AudioSampleFormat}} or when
+    {{platform object/[[Detached]]}} is `true`.
 
     The {{AudioData/format}} getter steps are to return
     {{AudioData/[[format]]}}.
@@ -2434,7 +2440,7 @@ dictionary AudioDataInit {
     3. Assign `0` to |data|'s {{AudioData/[[sample rate]]}}.
     4. Assign `0` to |data|'s {{AudioData/[[number of frames]]}}.
     5. Assign `0` to |data|'s {{AudioData/[[number of channels]]}}.
-    6. Assign `""` to |data|'s {{AudioData/[[format]]}}.
+    6. Assign `null` to |data|'s {{AudioData/[[format]]}}.
 
 : To check if a {{AudioDataInit}} is a 
     <dfn>valid AudioDataInit</dfn>, run these steps:
@@ -2711,7 +2717,7 @@ interface VideoFrame {
   constructor(sequence<PlaneInit> planes,
               VideoFramePlaneInit init);
 
-  readonly attribute PixelFormat format;
+  readonly attribute VideoPixelFormat? format;
   readonly attribute unsigned long codedWidth;
   readonly attribute unsigned long codedHeight;
   readonly attribute DOMRectReadOnly? codedRect;
@@ -2735,7 +2741,7 @@ dictionary VideoFrameInit {
 };
 
 dictionary VideoFramePlaneInit {
-  required PixelFormat format;
+  required VideoPixelFormat format;
   [EnforceRange] required unsigned long codedWidth;
   [EnforceRange] required unsigned long codedHeight;
   DOMRectInit visibleRect;
@@ -2759,7 +2765,9 @@ dictionary PlaneInit {
     this frame.
 
 : <dfn attribute for=VideoFrame>\[[format]]</dfn>
-:: A {{PixelFormat}} describing the pixel format of the {{VideoFrame}}.
+:: A {{VideoPixelFormat}} describing the pixel format of the {{VideoFrame}}.
+    Will be `null` whenever the underlying format does not map to a
+    {{VideoPixelFormat}} or when {{platform object/[[Detached]]}} is `true`.
 
 : <dfn attribute for=VideoFrame>[[coded width]]</dfn>
 :: Width of the {{VideoFrame}} in pixels, potentionally including non-visible
@@ -2878,7 +2886,7 @@ dictionary PlaneInit {
     |init|.
 
     ISSUE: The spec should define explicit rules for each
-        {{PixelFormat}} and reference them in the steps above. See
+        {{VideoPixelFormat}} and reference them in the steps above. See
         [#165](https://github.com/w3c/webcodecs/issues/165).
 
     NOTE: The User Agent may choose to allocate resource with a larger coded
@@ -2955,7 +2963,9 @@ dictionary PlaneInit {
 ### Attributes ###{#videoframe-attributes}
 : <dfn attribute for=VideoFrame>format</dfn>
 :: Describes the arrangement of bytes in each plane as well as the number and
-    order of the planes.
+    order of the planes. Will be `null` whenever the underlying format does not
+    map to a {{VideoPixelFormat}} or when {{platform object/[[Detached]]}} is
+    `true`.
 
     The {{VideoFrame/format}} getter steps are to return
     {{VideoFrame/[[format]]}}.
@@ -3058,7 +3068,7 @@ A <dfn>computed plane layout</dfn> is a [=struct=] that consists of:
 
     When invoked, run these steps:
     1. If {{platform object/[[Detached]]}} is `true`, return `0`.
-    2. If {{VideoFrame/[[format]]}} is `""`, throw a {{NotSupportedError}}
+    2. If {{VideoFrame/[[format]]}} is `null`, throw a {{NotSupportedError}}
         {{DOMException}}.
     3. Let |parsedOptions| be the result of running the [=Parse
         VideoFrameCopyToOptions=] algorithm with |options|.
@@ -3076,7 +3086,7 @@ A <dfn>computed plane layout</dfn> is a [=struct=] that consists of:
 
     When invoked, run these steps:
     1. If {{platform object/[[Detached]]}} is `true`, return `0`.
-    2. If {{VideoFrame/[[format]]}} is `""`, throw a {{NotSupportedError}}
+    2. If {{VideoFrame/[[format]]}} is `null`, throw a {{NotSupportedError}}
         {{DOMException}}.
     3. Let |parsedOptions| be the result of running the [=Parse
         VideoFrameCopyToOptions=] algorithm with |options|.
@@ -3145,8 +3155,8 @@ A <dfn>computed plane layout</dfn> is a [=struct=] that consists of:
       2. Let |resource| be the [=media resource=] described by |output|.
       3. Let |resourceReference| be a reference to |resource|.
       4. Assign |resourceReference| to {{VideoFrame/[[resource reference]]}}.
-      5. If |output| uses a recognized {{PixelFormat}}, assign that format to
-          {{VideoFrame/[[format]]}}. Otherwise, assign `""` to
+      5. If |output| uses a recognized {{VideoPixelFormat}}, assign that format to
+          {{VideoFrame/[[format]]}}. Otherwise, assign `null` to
           {{VideoFrame/[[format]]}}.
       6. Let |codedWidth| and |codedHeight| be the coded width and height of the
           |output| in pixels.
@@ -3208,9 +3218,9 @@ A <dfn>computed plane layout</dfn> is a [=struct=] that consists of:
     |init|,  |frame|, |resource|, |width| and |height|)
 :: 1. Assign a new reference for |resource| to |frame|'s
         {{VideoFrame/[[resource reference]]}}.
-    2. If |resource| uses a recognized {{PixelFormat}}, assign the
-        {{PixelFormat}} of |resource| to {{VideoFrame/[[format]]}}.
-    3. Otherwise, assign `""` to {{VideoFrame/[[format]]}}.
+    2. If |resource| uses a recognized {{VideoPixelFormat}}, assign the
+        {{VideoPixelFormat}} of |resource| to {{VideoFrame/[[format]]}}.
+    3. Otherwise, assign `null` to {{VideoFrame/[[format]]}}.
     4. Assign |width| to the following attributes of |frame|:
         {{VideoFrame/codedWidth}}, {{VideoFrame/displayWidth}}.
     5. Assign |height| to the following attributes of |frame|:
@@ -3237,7 +3247,7 @@ A <dfn>computed plane layout</dfn> is a [=struct=] that consists of:
 : <dfn>Close VideoFrame</dfn> (with |frame|)
 :: 1. Assign `null` to |frame|'s {{VideoFrame/[[resource reference]]}}.
     2. Assign `true` to |frame|'s {{platform object/[[Detached]]}}.
-    3. Assign `""` to |frame|'s {{VideoFrame/format}}.
+    3. Assign `null` to |frame|'s {{VideoFrame/format}}.
     4. Assign `0` to |frame|'s {{VideoFrame/[[coded width]]}},
         {{VideoFrame/[[coded height]]}}, {{VideoFrame/[[visible left]]}},
         {{VideoFrame/[[visible top]]}}, {{VideoFrame/[[visible width]]}},
@@ -3495,7 +3505,7 @@ Pixel formats describe the arrangement of bytes in each plane as well as the
 number and order of the planes. Each format is described in its own sub-section.
 
 <xmp class='idl'>
-enum PixelFormat {
+enum VideoPixelFormat {
   // 4:2:0 Y, U, V
   "I420",
   // 4:2:0 Y, U, V, A
@@ -3533,7 +3543,7 @@ in the image that are derived from a [=sub-sampled=] sample.
 </div>
 
 <dl>
-  <dt><dfn enum-value for=PixelFormat>I420</dfn></dt>
+  <dt><dfn enum-value for=VideoPixelFormat>I420</dfn></dt>
   <dd>
     This format is composed of three distinct planes, one plane of Luma and two
     planes of Chroma, denoted Y, U and V, and present in this order. It is also
@@ -3558,7 +3568,7 @@ in the image that are derived from a [=sub-sampled=] sample.
     Similarly, the visible rectangle ({{VideoFrame/displayWidth}} and
     {{VideoFrame/displayHeight}}) MUST be even.
   </dd>
-  <dt><dfn enum-value for=PixelFormat>I420A</dfn></dt>
+  <dt><dfn enum-value for=VideoPixelFormat>I420A</dfn></dt>
   <dd>
 
     This format is composed of four distinct planes, one plane of Luma, two
@@ -3585,7 +3595,7 @@ in the image that are derived from a [=sub-sampled=] sample.
     Similarly, the visible rectangle ({{VideoFrame/displayWidth}} and
     {{VideoFrame/displayHeight}}) MUST be even.
   </dd>
-  <dt><dfn enum-value for=PixelFormat>I422</dfn></dt>
+  <dt><dfn enum-value for=VideoPixelFormat>I422</dfn></dt>
   <dd>
 
     This format is composed of three distinct planes, one plane of Luma and two
@@ -3611,7 +3621,7 @@ in the image that are derived from a [=sub-sampled=] sample.
     coordinates ({{VideoFrame/displayWidth}} and {{VideoFrame/displayHeight}})
     MUST be even.
   </dd>
-  <dt><dfn enum-value for=PixelFormat>I444</dfn></dt>
+  <dt><dfn enum-value for=VideoPixelFormat>I444</dfn></dt>
   <dd>
 
     This format is composed of three distinct planes, one plane of Luma and two
@@ -3626,7 +3636,7 @@ in the image that are derived from a [=sub-sampled=] sample.
     image, in {{VideoFrame/codedHeight}} lines of {{VideoFrame/codedWidth}}
     samples.
   </dd>
-  <dt><dfn enum-value for=PixelFormat>NV12</dfn></dt>
+  <dt><dfn enum-value for=VideoPixelFormat>NV12</dfn></dt>
   <dd>
 
     This format is composed of two distinct planes, one plane of Luma and then
@@ -3682,7 +3692,7 @@ in the image that are derived from a [=sub-sampled=] sample.
     All samples being linear in memory.
   </div>
   </dd>
-  <dt><dfn enum-value for=PixelFormat>RGBA</dfn></dt>
+  <dt><dfn enum-value for=VideoPixelFormat>RGBA</dfn></dt>
   <dd>
 
     This format is composed of a single plane, that encodes four components:
@@ -3695,7 +3705,7 @@ in the image that are derived from a [=sub-sampled=] sample.
     left in the image, in {{VideoFrame/codedHeight}} lines of
     {{VideoFrame/codedWidth}} samples.
   </dd>
-  <dt><dfn enum-value for=PixelFormat>RGBX</dfn></dt>
+  <dt><dfn enum-value for=VideoPixelFormat>RGBX</dfn></dt>
   <dd>
 
     This format is composed of a single plane, that encodes four components:
@@ -3709,7 +3719,7 @@ in the image that are derived from a [=sub-sampled=] sample.
     in the image, in {{VideoFrame/codedHeight}} lines of
     {{VideoFrame/codedWidth}} samples.
   </dd>
-  <dt><dfn enum-value for=PixelFormat>BGRA</dfn></dt>
+  <dt><dfn enum-value for=VideoPixelFormat>BGRA</dfn></dt>
   <dd>
 
     This format is composed of a single plane, that encodes four components:
@@ -3722,7 +3732,7 @@ in the image that are derived from a [=sub-sampled=] sample.
     in the image, in {{VideoFrame/codedHeight}} lines of
     {{VideoFrame/codedWidth}} samples.
   </dd>
-  <dt><dfn enum-value for=PixelFormat>BGRX</dfn></dt>
+  <dt><dfn enum-value for=VideoPixelFormat>BGRX</dfn></dt>
   <dd>
 
     This format is composed of a single plane, that encodes four components:
